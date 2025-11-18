@@ -1,0 +1,4 @@
+# .github/labeler.yml
+new:
+  - changed-files:
+    - any-glob-to-any-file: '**/*'
