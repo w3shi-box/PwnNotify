@@ -1,23 +1,27 @@
-name: Notify
-on:
-  status:
-  pull_request_review:
+# notifies users from CODENOTIFY files if a PR changed any files
+# that they subscribe to
+name: notify
 
-permissions: read-all
+on:
+  pull_request_target:
+    types: [opened, synchronize, ready_for_review]
 
 jobs:
-  notify:
-    runs-on: [self-hosted, linux]
+  codenotify:
+    runs-on: ubuntu-latest
+    name: Label and notify
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
-      - name: Get branch name if status changed
-        if: github.event_name == 'status'
-        run: >
-          echo "os_branch=${{ github.event.branches[0].name }}" >> $GITHUB_ENV
-      - name: Get branch name if pr review state changed
-        if: github.event_name == 'pull_request_review'
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          show-progress: false
+          persist-credentials: false
+      - uses: sourcegraph/codenotify@54e4320f0d93f162a371d8d9dc1fb11018199746 # v0.6.4
         env:
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-        run: >
-          echo "os_branch=$PR_HEAD_REF" >> $GITHUB_ENV
-      - name: Notify
-        run: ${{ secrets.NOTIFY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/labeler@v4.3.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
